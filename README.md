@@ -45,7 +45,15 @@ This repository takes the patched Ubuntu 22.04 source packages from the PPA and 
 
 ## Quick start
 
-On an Ubuntu 20.04 amd64 server with PHP 8.1 from the ondrej/php PPA (replace `8.1` with your version):
+On an Ubuntu 20.04 amd64 server, this command upgrades every installed PHP version included in the release:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nanoarmando/php-focal-backports/main/install.sh | sudo bash
+```
+
+For each version, [install.sh](install.sh) backs up the installed packages with `dpkg-repack` (to `~/php-focal-backports/rollback/`), downloads and verifies the archive, upgrades only the packages already installed while keeping your configuration files, restarts PHP-FPM and Apache when they are running, and checks that every package was replaced. Running it again does nothing once every version is patched.
+
+To do the same by hand for one version (replace `8.1` with your version):
 
 ```bash
 V=8.1
@@ -75,14 +83,17 @@ The commands upgrade **only the packages that are already installed**. Read [Ins
 
 ### Steps
 
-1. **Back up the current packages**, so you can roll back:
+1. **Back up the current packages**, so you can roll back. The PPA no longer publishes for focal, so `apt` cannot download the installed versions again; rebuild the `.deb` files from the installed packages with `dpkg-repack` instead:
 
    ```bash
    V=8.1
-   sudo apt-get install --download-only --reinstall $(dpkg-query -W -f='${Package}=${Version} ' "php${V}*")
+   sudo apt-get install -y dpkg-repack
+   mkdir -p ~/php${V}-rollback && cd ~/php${V}-rollback
+   sudo dpkg-repack $(dpkg-query -W -f='${db:Status-Abbrev} ${Package}\n' "php${V}*" "libapache2-mod-php${V}" "libphp${V}-embed" 2>/dev/null | awk '$1 == "ii" {print $2}')
+   sudo tar -czf ~/php${V}-etc-backup.tar.gz /etc/php/${V}
    ```
 
-   If `apt` can no longer download your installed version, rebuild the `.deb` files from the installed packages with `dpkg-repack` instead.
+   To roll back, run `sudo dpkg -i ~/php${V}-rollback/*.deb` and restart the services (step 4).
 
 2. **Download and verify** the archive for your version, as shown in [Quick start](#quick-start).
 
