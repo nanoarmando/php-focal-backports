@@ -51,7 +51,16 @@ On an Ubuntu 20.04 amd64 server, this command upgrades every installed PHP versi
 curl -fsSL https://raw.githubusercontent.com/nanoarmando/php-focal-backports/main/install.sh | sudo bash
 ```
 
-For each version, [install.sh](install.sh) backs up the installed packages with `dpkg-repack` (to `~/php-focal-backports/rollback/`), downloads and verifies the archive, upgrades only the packages already installed while keeping your configuration files, restarts PHP-FPM and Apache when they are running, and checks that every package was replaced. Running it again does nothing once every version is patched.
+For each version, [install.sh](install.sh) backs up the installed packages with `dpkg-repack` (to `~/php-focal-backports/rollback/`), downloads and verifies the archive, upgrades only the packages already installed while keeping your configuration files, restarts PHP-FPM and Apache when they are running, and checks that every package was replaced. It stops before changing a version if any package cannot be backed up. Running it again does nothing once every version is patched.
+
+To roll back to the backed-up packages (every backed-up version, or only the versions you list):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nanoarmando/php-focal-backports/main/install.sh | sudo bash -s -- --rollback
+curl -fsSL https://raw.githubusercontent.com/nanoarmando/php-focal-backports/main/install.sh | sudo bash -s -- --rollback 7.4
+```
+
+The rollback keeps your configuration files and restarts the services. Packages that the upgrade added as new dependencies, such as `pkg-config` for `php7.4-dev`, stay installed.
 
 To do the same by hand for one version (replace `8.1` with your version):
 
